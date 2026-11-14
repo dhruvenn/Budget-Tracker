@@ -329,6 +329,9 @@
 const state = { accounts: [], transactions: [], lending: [], categories: [], budgets: [] };
 const SYMBOL = '₹';
 const LS_KEY = 'budget_script_url';
+// Paste your NEW Apps Script /exec URL between the quotes below.
+// The app will then connect automatically on every browser and device.
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-DLYt1AlefiM2roeW8pN54KNFIyET8OXOREtAMDgcTOjjGGfu4OFeRhkulq8oqpnPmA/exec';
 const THEME_KEY = 'budget_theme';
 
 const $ = s => document.querySelector(s);
@@ -357,7 +360,11 @@ function toast(msg) {
 }
 
 /* ---------- Backend ---------- */
-function url() { return localStorage.getItem(LS_KEY) || ''; }
+function url() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) return saved;
+  return DEFAULT_SCRIPT_URL.startsWith('https://script.google.com/') ? DEFAULT_SCRIPT_URL : '';
+}
 
 async function api(method, payload) {
   const u = url();
