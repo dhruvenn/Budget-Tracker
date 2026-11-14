@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<title>Budget</title>
+<style>
+  :root {
+    --bg: #f4f4f4;
+    --ink: #111111;
+    --muted: #8a8a8a;
+    --line: rgba(0,0,0,0.08);
+    --glass: rgba(255,255,255,0.6);
+    --glass-strong: rgba(255,255,255,0.85);
+    --invert: #111111;
+    --invert-ink: #ffffff;
+    --danger: #111111;
+    --radius: 22px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000;
+      --ink: #f2f2f2;
+      --muted: #8a8a8a;
+      --line: rgba(255,255,255,0.1);
+      --glass: rgba(255,255,255,0.06);
+      --glass-strong: rgba(30,30,30,0.85);
+      --invert: #f2f2f2;
+      --invert-ink: #000000;
+      --danger: #f2f2f2;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: env(safe-area-inset-top, 0) 0 calc(110px + env(safe-area-inset-bottom, 0));
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Liquid glass surface, kept subtle */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(24px) saturate(120%);
+    -webkit-backdrop-filter: blur(24px) saturate(120%);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 6px 24px rgba(0,0,0,0.04);
+    border-radius: var(--radius);
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 10;
+    margin: 12px 14px 0;
+    padding: 12px 14px 12px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
+  .icon-btn {
+    border: none; background: transparent; color: var(--ink);
+    font-size: 20px; padding: 6px 10px; border-radius: 12px; cursor: pointer;
+  }
+
+  main { padding: 14px; }
+  section.view { display: none; }
+  section.view.active { display: block; }
+
+  .card { padding: 18px; margin-bottom: 14px; }
+  .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .big { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); gap: 10px; cursor: pointer; }
+  .row:last-child { border-bottom: none; }
+  .row .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .amt.muted { color: var(--muted); font-weight: 500; }
+
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 20px 6px 8px; display: flex; justify-content: space-between; }
+
+  .bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; margin-top: 8px; }
+  .bar > span { display: block; height: 100%; background: var(--ink); border-radius: 6px; transition: width .4s ease; }
+  .bar > span.over { background: repeating-linear-gradient(45deg, var(--ink) 0 4px, transparent 4px 8px); }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  .stat { padding: 12px; border-radius: 16px; background: var(--line); }
+  .stat .k { font-size: 12px; color: var(--muted); }
+  .stat .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+  .tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: middle; }
+  .tag.on { background: var(--invert); color: var(--invert-ink); border-color: var(--invert); }
+
+  input, select {
+    width: 100%; font: inherit; font-size: 16px; color: var(--ink);
+    background: var(--glass-strong); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; margin-top: 6px; outline: none; -webkit-appearance: none; appearance: none;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin-top: 14px; }
+  .btn {
+    width: 100%; margin-top: 18px; padding: 14px; border: none; border-radius: 16px;
+    background: var(--invert); color: var(--invert-ink); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.danger { color: var(--danger); }
+
+  /* Bottom tab bar: Activity | Accounts | Overview | Lending | Budgets */
+  .tabbar {
+    position: fixed; left: 14px; right: 14px; bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    display: flex; justify-content: space-around; padding: 8px; z-index: 20;
+  }
+  .tab {
+    flex: 1; border: none; background: transparent; color: var(--muted);
+    font: inherit; font-size: 11px; padding: 8px 0; border-radius: 16px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .tab .ico { font-size: 19px; line-height: 1; }
+  .tab.active { color: var(--ink); background: var(--glass-strong); }
+
+  /* Floating quick-add button */
+  .fab {
+    position: fixed; right: 22px; bottom: calc(96px + env(safe-area-inset-bottom, 0));
+    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--invert); color: var(--invert-ink);
+    font-size: 30px; font-weight: 300; line-height: 56px; text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18); z-index: 25;
+  }
+  .fab:active { transform: scale(0.94); }
+
+  .sheet {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.25); display: none; z-index: 30; align-items: flex-end;
+  }
+  .sheet.open { display: flex; }
+  .sheet .panel {
+    width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 28px 28px 0 0;
+    padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0));
+    background: var(--glass-strong);
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--line);
+  }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 14px; }
+  .sheet h2 { font-size: 18px; margin: 0 0 4px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px);
+    padding: 10px 16px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none;
+    transition: all .3s ease; z-index: 40; background: var(--invert); color: var(--invert-ink); white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty { text-align: center; color: var(--muted); padding: 24px 10px; font-size: 14px; }
+  .seg { display: flex; gap: 6px; background: var(--line); padding: 4px; border-radius: 14px; margin-top: 6px; }
+  .seg button { flex: 1; border: none; background: transparent; padding: 9px; border-radius: 10px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .seg button.on { background: var(--glass-strong); font-weight: 600; }
+  .list-inline { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<header class="glass">
+  <h1 id="title">Overview</h1>
+  <div>
+    <button class="icon-btn" id="syncBtn" aria-label="Refresh">↻</button>
+    <button class="icon-btn" id="setupBtn" aria-label="Setup">⚙</button>
+  </div>
+</header>
+
+<main>
+  <!-- ACTIVITY (left tab) -->
+  <section class="view" id="view-activity">
+    <div class="section-title"><span>This month</span><span id="txCount"></span></div>
+    <div class="card glass" id="txList"></div>
+    <button class="btn ghost" id="importBtn">Import bank CSV</button>
+  </section>
+
+  <!-- ACCOUNTS -->
+  <section class="view" id="view-accounts">
+    <div class="card glass">
+      <div class="label">Total across all accounts</div>
+      <div class="big" id="accTotal">₹0</div>
+    </div>
+    <div class="section-title"><span>Your accounts</span></div>
+    <div class="card glass" id="accountList"></div>
+    <button class="btn" id="addAccountBtn">+ Add bank, cash or card</button>
+  </section>
+
+  <!-- OVERVIEW (center tab) -->
+  <section class="view active" id="view-overview">
+    <div class="card glass">
+      <div class="label">Total balance</div>
+      <div class="big" id="totalBalance">₹0</div>
+      <div class="hint" id="balanceHint"></div>
+    </div>
+
+    <div class="card glass">
+      <div class="label" id="monthLabel"></div>
+      <div class="big" id="monthSpent" style="font-size:26px">₹0</div>
+      <div class="hint" id="monthHint"></div>
+    </div>
+
+    <div class="section-title"><span>Spending by category</span></div>
+    <div class="card glass" id="catBreakdown"></div>
+
+    <div class="section-title"><span>Owed to you</span><span id="owedToMeTotal"></span></div>
+    <div class="card glass" id="owedToMeOverview"></div>
+
+    <div class="section-title"><span>You owe</span><span id="iOweTotal"></span></div>
+    <div class="card glass" id="iOweOverview"></div>
+  </section>
+
+  <!-- LENDING -->
+  <section class="view" id="view-lending">
+    <div class="section-title"><span>Owed to you</span><span id="owedToMeTotal2"></span></div>
+    <div class="card glass" id="owedToMeList"></div>
+
+    <div class="section-title"><span>You owe</span><span id="iOweTotal2"></span></div>
+    <div class="card glass" id="iOweList"></div>
+
+    <button class="btn" id="addLendBtn">+ Add lent or borrowed entry</button>
+  </section>
+
+  <!-- BUDGETS -->
+  <section class="view" id="view-budgets">
+    <div class="card glass">
+      <div class="label" id="budgetMonth"></div>
+      <div class="big" id="budgetRemaining">₹0</div>
+      <div class="hint" id="budgetSummaryHint"></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Budgeted</div><div class="v" id="bTotal">₹0</div></div>
+        <div class="stat"><div class="k">Spent</div><div class="v" id="bSpent">₹0</div></div>
+        <div class="stat"><div class="k">Days left</div><div class="v" id="bDays">0</div></div>
+        <div class="stat"><div class="k">Safe per day</div><div class="v" id="bPerDay">₹0</div></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>Categories</span></div>
+    <div class="card glass" id="budgetList"></div>
+    <button class="btn ghost" id="manageCatsBtn">Manage categories</button>
+  </section>
+
+  <!-- SETUP (opened from gear icon) -->
+  <section class="view" id="view-setup">
+    <div class="section-title"><span>Connection</span></div>
+    <div class="card glass">
+      <label>Apps Script Web App URL</label>
+      <input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="hint">Paste the URL you got when deploying the script (see setup steps). Ends with /exec.</div>
+      <button class="btn" id="saveUrlBtn">Save and connect</button>
+    </div>
+  </section>
+</main>
+
+<!-- Floating quick-add -->
+<button class="fab" id="fab" aria-label="Quick add transaction">+</button>
+
+<nav class="tabbar glass">
+  <button class="tab" data-view="activity"><span class="ico">≡</span>Activity</button>
+  <button class="tab" data-view="accounts"><span class="ico">▤</span>Accounts</button>
+  <button class="tab active" data-view="overview"><span class="ico">◎</span>Overview</button>
+  <button class="tab" data-view="lending"><span class="ico">⇄</span>Lending</button>
+  <button class="tab" data-view="budgets"><span class="ico">◔</span>Budgets</button>
+</nav>
+
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <div class="grab"></div>
+    <h2 id="sheetTitle"></h2>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = { accounts: [], transactions: [], lending: [], categories: [], budgets: [] };
+const SYMBOL = '₹';
+const LS_KEY = 'budget_script_url';
+
+const $ = s => document.querySelector(s);
+const fmt = n => SYMBOL + Math.round(Number(n || 0)).toLocaleString('en-IN');
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const thisMonth = () => todayISO().slice(0, 7);
+const monthKey = d => String(d).slice(0, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const labelType = t => ({ bank: 'Bank account', cash: 'Cash', credit: 'Credit card' }[t] || t);
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- Backend ---------- */
+function url() { return localStorage.getItem(LS_KEY) || ''; }
+
+async function api(method, payload) {
+  const u = url();
+  if (!u) throw new Error('Connect your script URL in Setup first');
+  if (method === 'GET') {
+    const res = await fetch(u);
+    return res.json();
+  }
+  const res = await fetch(u, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+async function load() {
+  try {
+    const data = await api('GET');
+    state.accounts = data.accounts || [];
+    state.transactions = data.transactions || [];
+    state.lending = data.lending || [];
+    state.categories = data.categories || [];
+    state.budgets = data.budgets || [];
+    render();
+  } catch (e) {
+    toast(e.message || 'Could not load data');
+  }
+}
+
+async function write(payload) {
+  try {
+    const r = await api('POST', payload);
+    await load();
+    return r;
+  } catch (e) {
+    toast('Save failed');
+    throw e;
+  }
+}
+
+/* ---------- Calculations ---------- */
+function accountBalance(acc) {
+  let bal = Number(acc.opening_balance || 0);
+  state.transactions.forEach(t => {
+    if (String(t.account_id) !== String(acc.id)) return;
+    const amt = Number(t.amount || 0);
+    bal += t.type === 'income' ? amt : -amt;
+  });
+  return bal;
+}
+const outstanding = l => Number(l.principal || 0) - Number(l.repaid || 0);
+const monthTx = (m = thisMonth()) => state.transactions.filter(t => monthKey(t.date) === m);
+const monthExpenses = (m = thisMonth()) => monthTx(m).filter(t => t.type === 'expense');
+const sumBy = (arr, fn) => arr.reduce((s, x) => s + fn(x), 0);
+const owedToMe = () => state.lending.filter(l => l.direction !== 'borrowed' && outstanding(l) > 0);
+const iOwe = () => state.lending.filter(l => l.direction === 'borrowed' && outstanding(l) > 0);
+
+/* ---------- Render ---------- */
+function render() {
+  renderAccounts();
+  renderOverview();
+  renderActivity();
+  renderLending();
+  renderBudgets();
+}
+
+function renderOverview() {
+  const total = sumBy(state.accounts, accountBalance);
+  $('#totalBalance').textContent = fmt(total);
+  $('#balanceHint').textContent = state.accounts.length + ' accounts';
+
+  $('#monthLabel').textContent = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  const spent = sumBy(monthExpenses(), t => Number(t.amount));
+  const budgetTotal = sumBy(state.budgets, b => Number(b.monthly_limit || 0));
+  $('#monthSpent').textContent = fmt(spent);
+  $('#monthHint').textContent = budgetTotal ? 'of ' + fmt(budgetTotal) + ' budgeted' : 'Set budgets to track limits';
+
+  const byCat = {};
+  monthExpenses().forEach(t => {
+    const c = t.category || 'Other';
+    byCat[c] = (byCat[c] || 0) + Number(t.amount || 0);
+  });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  $('#catBreakdown').innerHTML = cats.length
+    ? cats.map(([c, v]) => {
+        const lim = Number((state.budgets.find(b => b.category === c) || {}).monthly_limit || 0);
+        const pct = lim ? Math.min(100, (v / lim) * 100) : Math.min(100, (v / Math.max(spent, 1)) * 100);
+        return `<div class="row" style="display:block;cursor:default">
+          <div class="list-inline"><span>${esc(c)}</span><span class="amt">${fmt(v)}</span></div>
+          <div class="bar"><span class="${lim && v > lim ? 'over' : ''}" style="width:${pct}%"></span></div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">No spending this month yet</div>';
+
+  const owed = sumBy(owedToMe(), outstanding);
+  const owe = sumBy(iOwe(), outstanding);
+  $('#owedToMeTotal').textContent = fmt(owed);
+  $('#iOweTotal').textContent = fmt(owe);
+  $('#owedToMeOverview').innerHTML = partitionRows(owedToMe(), 'Nobody owes you money right now');
+  $('#iOweOverview').innerHTML = partitionRows(iOwe(), 'You don\'t owe anyone right now');
+}
+
+function partitionRows(list, emptyText) {
+  if (!list.length) return `<div class="empty">${emptyText}</div>`;
+  return list.map(l => `<div class="row" data-len="${l.id}">
+      <div><div>${esc(l.person)}</div><div class="meta">Principal ${fmt(l.principal)} · Repaid ${fmt(l.repaid)}</div></div>
+      <div class="amt">${fmt(outstanding(l))}</div>
+    </div>`).join('');
+}
+
+function renderAccounts() {
+  $('#accTotal').textContent = fmt(sumBy(state.accounts, accountBalance));
+  const el = $('#accountList');
+  if (!state.accounts.length) {
+    el.innerHTML = '<div class="empty">No accounts yet. Add your bank, cash, or credit card with its opening balance.</div>';
+    return;
+  }
+  el.innerHTML = state.accounts.map(a => {
+    const bal = accountBalance(a);
+    return `<div class="row" data-acc="${a.id}">
+      <div><div>${esc(a.name)}</div>
+      <div class="meta">${labelType(a.type)} · Opening ${fmt(a.opening_balance)}</div></div>
+      <div class="amt ${bal < 0 ? '' : ''}">${fmt(bal)}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.row').forEach(r => r.onclick = () => editAccount(r.dataset.acc));
+}
+
+function renderActivity() {
+  const el = $('#txList');
+  const txs = [...monthTx()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  $('#txCount').textContent = txs.length ? txs.length + ' items' : '';
+  if (!txs.length) { el.innerHTML = '<div class="empty">No transactions this month. Tap + to add one.</div>'; return; }
+  el.innerHTML = txs.map(t => {
+    const acc = state.accounts.find(a => String(a.id) === String(t.account_id));
+    const sign = t.type === 'income' ? '+' : '−';
+    return `<div class="row" data-tx="${t.id}">
+      <div><div>${esc(t.note || t.category || 'Transaction')}</div>
+      <div class="meta">${esc(t.category || '')} · ${esc(acc ? acc.name : '')} · ${esc(String(t.date).slice(0, 10))}</div></div>
+      <div class="amt ${t.type === 'income' ? '' : 'muted'}">${sign}${fmt(t.amount)}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.row').forEach(r => r.onclick = () => editTransaction(r.dataset.tx));
+}
+
+function renderLending() {
+  const owed = owedToMe(), owe = iOwe();
+  $('#owedToMeTotal2').textContent = fmt(sumBy(owed, outstanding));
+  $('#iOweTotal2').textContent = fmt(sumBy(owe, outstanding));
+  $('#owedToMeList').innerHTML = partitionRows(owed, 'Nobody owes you money right now');
+  $('#iOweList').innerHTML = partitionRows(owe, 'You don\'t owe anyone right now');
+  document.querySelectorAll('#owedToMeList .row, #iOweList .row').forEach(r => r.onclick = () => editLending(r.dataset.len));
+}
+
+function renderBudgets() {
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayNow = now.getDate();
+  const daysLeft = daysInMonth - dayNow + 1;
+  $('#budgetMonth').textContent = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' }) + ' · budget';
+
+  const cats = state.categories;
+  const limitOf = name => Number((state.budgets.find(b => b.category === name) || {}).monthly_limit || 0);
+  const spentOf = name => sumBy(monthExpenses().filter(t => t.category === name), t => Number(t.amount));
+
+  const totalBudget = sumBy(cats, c => limitOf(c.name));
+  const totalSpent = sumBy(cats, c => spentOf(c.name));
+  const remaining = totalBudget - totalSpent;
+  $('#budgetRemaining').textContent = (remaining < 0 ? '−' : '') + fmt(Math.abs(remaining));
+  $('#budgetSummaryHint').textContent = totalBudget
+    ? (remaining < 0 ? 'Over budget this month' : 'Left to spend this month')
+    : 'Set a limit on a category to start tracking';
+  $('#bTotal').textContent = fmt(totalBudget);
+  $('#bSpent').textContent = fmt(totalSpent);
+  $('#bDays').textContent = daysLeft;
+  $('#bPerDay').textContent = fmt(Math.max(0, remaining) / daysLeft);
+
+  const el = $('#budgetList');
+  if (!cats.length) { el.innerHTML = '<div class="empty">No categories yet</div>'; return; }
+  el.innerHTML = cats.map(c => {
+    const limit = limitOf(c.name), spent = spentOf(c.name);
+    if (!limit) {
+      return `<div class="row" data-cat="${esc(c.name)}">
+        <div><div>${esc(c.name)}</div><div class="meta">No limit · spent ${fmt(spent)}</div></div>
+        <div class="tag">Set limit</div></div>`;
+    }
+    const pct = Math.min(100, (spent / limit) * 100);
+    const left = limit - spent;
+    const expectedSoFar = limit * (dayNow / daysInMonth);
+    let status;
+    if (left < 0) status = `<span class="tag on">Over by ${fmt(-left)}</span>`;
+    else if (spent > expectedSoFar) status = `<span class="tag">Ahead of pace</span>`;
+    else status = `<span class="tag">On track</span>`;
+    return `<div class="row" data-cat="${esc(c.name)}" style="display:block">
+      <div class="list-inline"><span>${esc(c.name)} ${status}</span><span class="amt">${fmt(spent)} / ${fmt(limit)}</span></div>
+      <div class="bar"><span class="${left < 0 ? 'over' : ''}" style="width:${pct}%"></span></div>
+      <div class="meta" style="margin-top:6px">${left < 0 ? 'Overspent' : fmt(left) + ' left'} · ${Math.round(pct)}% used · ~${fmt(Math.max(0, left) / daysLeft)} per day</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.row').forEach(r => r.onclick = () => editBudget(r.dataset.cat));
+}
+
+/* ---------- Sheet helpers ---------- */
+function openSheet(title, html) {
+  $('#sheetTitle').textContent = title;
+  $('#sheetBody').innerHTML = html;
+  $('#sheet').classList.add('open');
+}
+function closeSheet() { $('#sheet').classList.remove('open'); }
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+
+function opts(list, valueKey, labelKey, selected) {
+  return list.map(x => `<option value="${esc(x[valueKey])}" ${String(x[valueKey]) === String(selected) ? 'selected' : ''}>${esc(x[labelKey])}</option>`).join('');
+}
+
+/* ---------- Accounts ---------- */
+function accountForm(a = {}) {
+  const isEdit = !!a.id;
+  return `
+    <label>Bank or account name</label>
+    <input id="f_name" placeholder="e.g. HDFC Savings" value="${esc(a.name || '')}">
+    <label>Type</label>
+    <select id="f_type">${opts([{v:'bank',l:'Bank account'},{v:'cash',l:'Cash'},{v:'credit',l:'Credit card'}],'v','l',a.type || 'bank')}</select>
+    <label>Opening balance (₹)</label>
+    <input id="f_open" type="number" inputmode="decimal" value="${esc(a.opening_balance ?? 0)}">
+    <div class="hint">The balance in this account on the day you start tracking it. Your transactions are added on top of this.</div>
+    <button class="btn" id="saveAcc">${isEdit ? 'Save changes' : 'Add account'}</button>
+    ${isEdit ? '<button class="btn danger ghost" id="delAcc">Delete account</button>' : ''}`;
+}
+
+function bindAccount(id) {
+  $('#saveAcc').onclick = async () => {
+    const name = $('#f_name').value.trim();
+    if (!name) return toast('Enter the account name');
+    const data = { name, type: $('#f_type').value, opening_balance: Number($('#f_open').value || 0) };
+    if (id) await write({ action: 'update', sheet: 'Accounts', id, data });
+    else await write({ action: 'add', sheet: 'Accounts', data: { ...data, created: todayISO() } });
+    closeSheet(); toast('Saved');
+  };
+  if (id && $('#delAcc')) $('#delAcc').onclick = async () => {
+    if (!confirm('Delete this account? Its transactions stay in the Sheet.')) return;
+    await write({ action: 'delete', sheet: 'Accounts', id });
+    closeSheet(); toast('Deleted');
+  };
+}
+
+function addAccount() { openSheet('New account', accountForm()); bindAccount(null); }
+function editAccount(id) {
+  const a = state.accounts.find(x => String(x.id) === String(id));
+  openSheet('Edit account', accountForm(a)); bindAccount(id);
+}
+
+/* ---------- Transactions ---------- */
+function txForm(t = {}) {
+  const isEdit = !!t.id;
+  const cats = state.categories.map(c => ({ v: c.name, l: c.name }));
+  const accs = state.accounts.map(a => ({ v: a.id, l: a.name }));
+  const type = t.type || 'expense';
+  return `
+    <div class="seg" id="f_typeSeg">
+      <button class="${type === 'expense' ? 'on' : ''}" data-v="expense">Expense</button>
+      <button class="${type === 'income' ? 'on' : ''}" data-v="income">Income</button>
+    </div>
+    <label>Amount (₹)</label><input id="f_amt" type="number" inputmode="decimal" value="${esc(t.amount || '')}" placeholder="0">
+    <label>Date</label><input id="f_date" type="date" value="${esc(String(t.date || todayISO()).slice(0, 10))}">
+    <label>Account</label><select id="f_acc">${opts(accs, 'v', 'l', t.account_id)}</select>
+    <label>Category</label><select id="f_cat">${opts(cats, 'v', 'l', t.category || 'Other')}</select>
+    <label>Note</label><input id="f_note" placeholder="Optional" value="${esc(t.note || '')}">
+    <button class="btn" id="saveTx">${isEdit ? 'Save changes' : 'Add transaction'}</button>
+    ${isEdit ? '<button class="btn danger ghost" id="delTx">Delete</button>' : ''}`;
+}
+
+function bindTxForm(id) {
+  let type = document.querySelector('#f_typeSeg .on').dataset.v;
+  document.querySelectorAll('#f_typeSeg button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#f_typeSeg button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on'); type = b.dataset.v;
+  });
+  $('#saveTx').onclick = async () => {
+    const amount = Number($('#f_amt').value);
+    if (!amount) return toast('Enter an amount');
+    const data = {
+      amount, type, date: $('#f_date').value, account_id: $('#f_acc').value,
+      category: $('#f_cat').value, note: $('#f_note').value.trim()
+    };
+    if (id) await write({ action: 'update', sheet: 'Transactions', id, data });
+    else await write({ action: 'add', sheet: 'Transactions', data: { ...data, source: 'manual' } });
+    closeSheet(); toast('Saved');
+  };
+  if (id && $('#delTx')) $('#delTx').onclick = async () => {
+    await write({ action: 'delete', sheet: 'Transactions', id });
+    closeSheet(); toast('Deleted');
+  };
+}
+
+function addTransaction() {
+  if (!state.accounts.length) { toast('Add an account first'); showView('accounts'); return; }
+  openSheet('New transaction', txForm());
+  bindTxForm(null);
+}
+function editTransaction(id) {
+  const t = state.transactions.find(x => String(x.id) === String(id));
+  openSheet('Transaction', txForm(t)); bindTxForm(id);
+}
+
+/* ---------- CSV import ---------- */
+function importCsv() {
+  if (!state.accounts.length) { toast('Add an account first'); return; }
+  openSheet('Import bank CSV', `
+    <label>Account</label><select id="f_acc">${opts(state.accounts.map(a => ({v:a.id,l:a.name})),'v','l','')}</select>
+    <label>CSV file</label><input id="f_file" type="file" accept=".csv,text/csv">
+    <div class="hint">Needs columns for date, description and amount. Negative amounts become expenses, positive become income. Rows land in "Other" so you can recategorise them later.</div>
+    <button class="btn" id="doImport">Import</button>`);
+  $('#doImport').onclick = async () => {
+    const file = $('#f_file').files[0];
+    if (!file) return toast('Choose a CSV file');
+    const text = await file.text();
+    const rows = parseCsv(text).map(r => {
+      const amt = Number(String(r.amount).replace(/[^0-9.\-]/g, ''));
+      return {
+        date: normaliseDate(r.date), amount: Math.abs(amt),
+        type: amt < 0 ? 'expense' : 'income', account_id: $('#f_acc').value,
+        category: 'Other', note: r.description || ''
+      };
+    }).filter(r => r.date && r.amount);
+    if (!rows.length) return toast('No valid rows found');
+    const res = await write({ action: 'importCsv', sheet: 'Transactions', data: { rows } });
+    closeSheet(); toast('Imported ' + (res.imported || rows.length) + ' rows');
+  };
+}
+
+function parseCsv(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const split = line => (line.match(/("([^"]|"")*"|[^,]*)(,|$)/g) || []).map(s => s.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+  const headers = split(lines[0]).map(h => h.toLowerCase());
+  return lines.slice(1).filter(Boolean).map(line => {
+    const cells = split(line);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = cells[i]);
+    if (!obj.amount && obj.debit) obj.amount = '-' + obj.debit;
+    if (!obj.amount && obj.credit) obj.amount = obj.credit;
+    return obj;
+  });
+}
+
+function normaliseDate(s) {
+  const m = String(s).match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (m) {
+    const y = m[3].length === 2 ? '20' + m[3] : m[3];
+    return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  const d = new Date(s);
+  return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+}
+
+/* ---------- Lending ---------- */
+function lendForm(l = {}) {
+  const isEdit = !!l.id;
+  return `
+    <label>Person</label><input id="f_person" value="${esc(l.person || '')}" placeholder="Name">
+    <label>Direction</label>
+    <select id="f_dir">
+      <option value="lent" ${l.direction !== 'borrowed' ? 'selected' : ''}>I lent money (owed to me)</option>
+      <option value="borrowed" ${l.direction === 'borrowed' ? 'selected' : ''}>I borrowed money (I owe)</option>
+    </select>
+    <label>Principal (₹)</label><input id="f_prin" type="number" inputmode="decimal" value="${esc(l.principal || '')}">
+    <label>Repaid so far (₹)</label><input id="f_rep" type="number" inputmode="decimal" value="${esc(l.repaid || 0)}">
+    <label>Date</label><input id="f_date" type="date" value="${esc(String(l.date || todayISO()).slice(0, 10))}">
+    <label>Note</label><input id="f_note" value="${esc(l.note || '')}">
+    <button class="btn" id="saveLend">${isEdit ? 'Save changes' : 'Add entry'}</button>
+    ${isEdit ? '<button class="btn danger ghost" id="delLend">Delete</button>' : ''}`;
+}
+
+function bindLend(id) {
+  $('#saveLend').onclick = async () => {
+    const person = $('#f_person').value.trim();
+    if (!person) return toast('Enter a name');
+    const data = {
+      person, direction: $('#f_dir').value, principal: Number($('#f_prin').value || 0),
+      repaid: Number($('#f_rep').value || 0), date: $('#f_date').value, note: $('#f_note').value.trim()
+    };
+    if (id) await write({ action: 'update', sheet: 'Lending', id, data });
+    else await write({ action: 'add', sheet: 'Lending', data });
+    closeSheet(); toast('Saved');
+  };
+  if (id && $('#delLend')) $('#delLend').onclick = async () => {
+    await write({ action: 'delete', sheet: 'Lending', id });
+    closeSheet(); toast('Deleted');
+  };
+}
+function addLending() { openSheet('Lent or borrowed', lendForm()); bindLend(null); }
+function editLending(id) {
+  const l = state.lending.find(x => String(x.id) === String(id));
+  openSheet('Lent or borrowed', lendForm(l)); bindLend(id);
+}
+
+/* ---------- Budgets & categories ---------- */
+function editBudget(cat) {
+  const b = state.budgets.find(x => x.category === cat);
+  openSheet('Budget: ' + cat, `
+    <label>Monthly limit (₹)</label>
+    <input id="f_lim" type="number" inputmode="decimal" value="${esc(b ? b.monthly_limit : '')}" placeholder="0 for no limit">
+    <div class="hint">Set to 0 to remove the limit. Spending in this category is compared against it each month.</div>
+    <button class="btn" id="saveBud">Save limit</button>`);
+  $('#saveBud').onclick = async () => {
+    await write({ action: 'setBudget', data: { category: cat, monthly_limit: Number($('#f_lim').value || 0) } });
+    closeSheet(); toast('Limit saved');
+  };
+}
+
+function manageCategories() {
+  const list = state.categories.map(c => `<div class="row" style="cursor:default"><span>${esc(c.name)}</span>
+    <button class="icon-btn" data-del="${c.id}" aria-label="Remove">✕</button></div>`).join('');
+  openSheet('Categories', `${list}
+    <label>New category</label><input id="f_newcat" placeholder="e.g. Travel">
+    <button class="btn" id="addCat">Add category</button>`);
+  $('#addCat').onclick = async () => {
+    const name = $('#f_newcat').value.trim();
+    if (!name) return;
+    await write({ action: 'add', sheet: 'Categories', data: { name } });
+    closeSheet(); toast('Category added');
+  };
+  document.querySelectorAll('[data-del]').forEach(btn => btn.onclick = async () => {
+    await write({ action: 'delete', sheet: 'Categories', id: btn.dataset.del });
+    closeSheet(); toast('Category removed');
+  });
+}
+
+/* ---------- Navigation ---------- */
+const TITLES = { activity: 'Activity', accounts: 'Accounts', overview: 'Overview', lending: 'Lending', budgets: 'Budgets', setup: 'Setup' };
+function showView(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $('#view-' + name).classList.add('active');
+  $('#title').textContent = TITLES[name];
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => showView(tab.dataset.view));
+$('#setupBtn').onclick = () => showView('setup');
+
+$('#syncBtn').onclick = () => load();
+$('#fab').onclick = addTransaction;
+$('#addAccountBtn').onclick = addAccount;
+$('#importBtn').onclick = importCsv;
+$('#addLendBtn').onclick = addLending;
+$('#manageCatsBtn').onclick = manageCategories;
+$('#saveUrlBtn').onclick = () => {
+  const u = $('#scriptUrl').value.trim();
+  if (!u.startsWith('https://script.google.com/')) return toast('That does not look like a script URL');
+  localStorage.setItem(LS_KEY, u);
+  toast('Connected'); load(); showView('overview');
+};
+
+$('#scriptUrl').value = url();
+if (url()) load();
+else { showView('setup'); toast('Connect your script first'); }
+</script>
+</body>
+</html>
