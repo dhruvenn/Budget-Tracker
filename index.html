@@ -1,231 +1,282 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Budget">
+<meta name="theme-color" content="#b9a8d8">
 <title>Budget</title>
 <style>
+  /* ---------- Theme tokens ---------- */
   :root {
-    --bg: #f4f4f4;
-    --ink: #111111;
-    --muted: #8a8a8a;
-    --line: rgba(0,0,0,0.08);
-    --glass: rgba(255,255,255,0.6);
-    --glass-strong: rgba(255,255,255,0.85);
-    --invert: #111111;
-    --invert-ink: #ffffff;
-    --danger: #111111;
-    --radius: 22px;
+    --bg: #b9a8d8;
+    --grid: rgba(255,255,255,0.22);
+    --panel: #efe9f9;
+    --panel-2: #e4dbf5;
+    --header: #cfe7df;
+    --ink: #17142a;
+    --muted: #5d5673;
+    --accent: #f7d674;
+    --accent-2: #f5b97a;
+    --ok: #cfe7df;
+    --warn: #f5b97a;
+    --border: #17142a;
+    --shadow: #17142a;
+    --radius: 18px;
     color-scheme: light;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #000000;
-      --ink: #f2f2f2;
-      --muted: #8a8a8a;
-      --line: rgba(255,255,255,0.1);
-      --glass: rgba(255,255,255,0.06);
-      --glass-strong: rgba(30,30,30,0.85);
-      --invert: #f2f2f2;
-      --invert-ink: #000000;
-      --danger: #f2f2f2;
-      color-scheme: dark;
-    }
+  [data-theme="dark"] {
+    --bg: #1b1730;
+    --grid: rgba(255,255,255,0.05);
+    --panel: #2a2445;
+    --panel-2: #342c55;
+    --header: #2f4f4b;
+    --ink: #f3efff;
+    --muted: #b3aacb;
+    --accent: #e9c25e;
+    --accent-2: #d98f52;
+    --ok: #2f4f4b;
+    --warn: #d98f52;
+    --border: #000000;
+    --shadow: #000000;
+    color-scheme: dark;
   }
+
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; min-height: 100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-    background: var(--bg);
+    font-family: "Space Grotesk", "Helvetica Neue", -apple-system, Arial, sans-serif;
     color: var(--ink);
-    padding: env(safe-area-inset-top, 0) 0 calc(110px + env(safe-area-inset-bottom, 0));
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 56px 56px;
+    padding: env(safe-area-inset-top, 0) 0 calc(120px + env(safe-area-inset-bottom, 0));
     -webkit-font-smoothing: antialiased;
+    transition: background-color .3s ease, color .3s ease;
   }
 
-  /* Liquid glass surface, kept subtle */
-  .glass {
-    background: var(--glass);
-    backdrop-filter: blur(24px) saturate(120%);
-    -webkit-backdrop-filter: blur(24px) saturate(120%);
-    border: 1px solid var(--line);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 6px 24px rgba(0,0,0,0.04);
-    border-radius: var(--radius);
-  }
-
+  /* ---------- Header bar (mint strip) ---------- */
   header {
     position: sticky; top: 0; z-index: 10;
-    margin: 12px 14px 0;
-    padding: 12px 14px 12px 18px;
-    display: flex; align-items: center; justify-content: space-between;
+    background: var(--header);
+    border-bottom: 2px solid var(--border);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
-  header h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
-  .icon-btn {
-    border: none; background: transparent; color: var(--ink);
-    font-size: 20px; padding: 6px 10px; border-radius: 12px; cursor: pointer;
+  header h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.2px; }
+  .hbtns { display: flex; gap: 8px; }
+  .round {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--panel); color: var(--ink);
+    border: 2px solid var(--border); box-shadow: 3px 3px 0 var(--shadow);
+    font-size: 17px; cursor: pointer; display: grid; place-items: center; padding: 0;
   }
+  .round:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
 
-  main { padding: 14px; }
+  main { padding: 16px 14px; }
   section.view { display: none; }
   section.view.active { display: block; }
 
-  .card { padding: 18px; margin-bottom: 14px; }
-  .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 5px 5px 0 var(--shadow);
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .card.flat { padding: 4px 16px; }
+  .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
   .big { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; font-variant-numeric: tabular-nums; }
-  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); gap: 10px; cursor: pointer; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+
+  .section-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    margin: 6px 4px 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-title .tot { text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 14px 0; border-bottom: 2px solid var(--border); cursor: pointer;
+  }
   .row:last-child { border-bottom: none; }
-  .row .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .row .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .amt { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
   .amt.muted { color: var(--muted); font-weight: 500; }
 
-  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 20px 6px 8px; display: flex; justify-content: space-between; }
+  .bar { height: 12px; border-radius: 8px; background: var(--panel-2); border: 2px solid var(--border); overflow: hidden; margin-top: 10px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-right: 2px solid var(--border); transition: width .4s ease; }
+  .bar > span.over { background: var(--accent-2); }
 
-  .bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; margin-top: 8px; }
-  .bar > span { display: block; height: 100%; background: var(--ink); border-radius: 6px; transition: width .4s ease; }
-  .bar > span.over { background: repeating-linear-gradient(45deg, var(--ink) 0 4px, transparent 4px 8px); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .stat { padding: 12px; border-radius: 14px; background: var(--panel-2); border: 2px solid var(--border); }
+  .stat .k { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .stat .v { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
 
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-  .stat { padding: 12px; border-radius: 16px; background: var(--line); }
-  .stat .k { font-size: 12px; color: var(--muted); }
-  .stat .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    border: 2px solid var(--border); background: var(--ok); color: var(--ink); margin-left: 6px; vertical-align: middle;
+  }
+  .tag.warn { background: var(--warn); }
+  .tag.plain { background: var(--panel); }
 
-  .tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: middle; }
-  .tag.on { background: var(--invert); color: var(--invert-ink); border-color: var(--invert); }
+  /* ---------- Buttons ---------- */
+  .btn {
+    width: 100%; margin-top: 16px; padding: 15px; cursor: pointer;
+    background: var(--accent); color: var(--ink);
+    border: 2px solid var(--border); border-radius: 16px; box-shadow: 4px 4px 0 var(--shadow);
+    font: inherit; font-size: 16px; font-weight: 700;
+  }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
+  .btn.alt { background: var(--panel); }
+  .btn.ghost { background: var(--panel); }
+  .btn.danger { background: var(--accent-2); }
 
+  /* ---------- Inputs ---------- */
   input, select {
     width: 100%; font: inherit; font-size: 16px; color: var(--ink);
-    background: var(--glass-strong); border: 1px solid var(--line);
-    border-radius: 14px; padding: 12px 14px; margin-top: 6px; outline: none; -webkit-appearance: none; appearance: none;
+    background: var(--panel); border: 2px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; margin-top: 6px; outline: none; -webkit-appearance: none; appearance: none;
   }
-  label { display: block; font-size: 13px; color: var(--muted); margin-top: 14px; }
-  .btn {
-    width: 100%; margin-top: 18px; padding: 14px; border: none; border-radius: 16px;
-    background: var(--invert); color: var(--invert-ink); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
-  }
-  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-  .btn.danger { color: var(--danger); }
+  input:focus, select:focus { box-shadow: 3px 3px 0 var(--shadow); }
+  label { display: block; font-size: 13px; color: var(--muted); margin-top: 14px; font-weight: 500; }
 
-  /* Bottom tab bar: Activity | Accounts | Overview | Lending | Budgets */
+  .seg { display: flex; gap: 8px; margin-top: 4px; }
+  .seg button {
+    flex: 1; padding: 10px; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700;
+    background: var(--panel); color: var(--ink); border: 2px solid var(--border); cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); box-shadow: 3px 3px 0 var(--shadow); }
+
+  /* ---------- Bottom tab bar ---------- */
   .tabbar {
-    position: fixed; left: 14px; right: 14px; bottom: calc(12px + env(safe-area-inset-bottom, 0));
-    display: flex; justify-content: space-around; padding: 8px; z-index: 20;
+    position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0));
+    display: flex; justify-content: space-around; gap: 4px; padding: 8px; z-index: 20;
+    background: var(--panel); border: 2px solid var(--border); border-radius: 22px; box-shadow: 5px 5px 0 var(--shadow);
   }
   .tab {
-    flex: 1; border: none; background: transparent; color: var(--muted);
-    font: inherit; font-size: 11px; padding: 8px 0; border-radius: 16px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    flex: 1; border: 2px solid transparent; background: transparent; color: var(--ink);
+    font: inherit; font-size: 11px; font-weight: 600; padding: 7px 0; border-radius: 14px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
   }
-  .tab .ico { font-size: 19px; line-height: 1; }
-  .tab.active { color: var(--ink); background: var(--glass-strong); }
+  .tab .ico { font-size: 18px; line-height: 1; }
+  .tab.active { background: var(--accent); border-color: var(--border); box-shadow: 2px 2px 0 var(--shadow); }
 
-  /* Floating quick-add button */
+  /* Floating quick-add */
   .fab {
-    position: fixed; right: 22px; bottom: calc(96px + env(safe-area-inset-bottom, 0));
-    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
-    background: var(--invert); color: var(--invert-ink);
-    font-size: 30px; font-weight: 300; line-height: 56px; text-align: center;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18); z-index: 25;
+    position: fixed; right: 22px; bottom: calc(100px + env(safe-area-inset-bottom, 0));
+    width: 60px; height: 60px; border-radius: 50%; cursor: pointer;
+    background: var(--accent); color: var(--ink);
+    border: 2px solid var(--border); box-shadow: 4px 4px 0 var(--shadow);
+    font-size: 32px; font-weight: 500; line-height: 1; display: grid; place-items: center; padding: 0 0 4px;
+    z-index: 25;
   }
-  .fab:active { transform: scale(0.94); }
+  .fab:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
 
+  /* ---------- Bottom sheet ---------- */
   .sheet {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.25); display: none; z-index: 30; align-items: flex-end;
+    position: fixed; inset: 0; background: rgba(20,16,40,0.35); display: none; z-index: 30; align-items: flex-end;
   }
   .sheet.open { display: flex; }
   .sheet .panel {
-    width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 28px 28px 0 0;
-    padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0));
-    background: var(--glass-strong);
-    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border: 1px solid var(--line);
+    width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 26px 26px 0 0;
+    padding: 18px 18px calc(26px + env(safe-area-inset-bottom, 0));
+    background: var(--panel); border: 2px solid var(--border); border-bottom: none;
+    box-shadow: 0 -4px 0 var(--shadow);
   }
-  .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 14px; }
-  .sheet h2 { font-size: 18px; margin: 0 0 4px; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+  .grab { width: 44px; height: 6px; border-radius: 4px; background: var(--border); margin: 0 auto 14px; }
+  .sheet h2 { font-size: 20px; margin: 0 0 4px; }
 
   .toast {
-    position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px);
-    padding: 10px 16px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none;
-    transition: all .3s ease; z-index: 40; background: var(--invert); color: var(--invert-ink); white-space: nowrap;
+    position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px);
+    padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 700; opacity: 0; pointer-events: none;
+    transition: all .3s ease; z-index: 40; background: var(--accent); color: var(--ink);
+    border: 2px solid var(--border); box-shadow: 3px 3px 0 var(--shadow); white-space: nowrap;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  .empty { text-align: center; color: var(--muted); padding: 24px 10px; font-size: 14px; }
-  .seg { display: flex; gap: 6px; background: var(--line); padding: 4px; border-radius: 14px; margin-top: 6px; }
-  .seg button { flex: 1; border: none; background: transparent; padding: 9px; border-radius: 10px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
-  .seg button.on { background: var(--glass-strong); font-weight: 600; }
-  .list-inline { display: flex; justify-content: space-between; align-items: center; }
+  .empty { text-align: center; color: var(--muted); padding: 22px 10px; font-size: 14px; }
+  .list-inline { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pill-badge {
+    display: inline-block; padding: 6px 12px; border-radius: 12px; background: var(--accent-2);
+    border: 2px solid var(--border); font-size: 12px; font-weight: 700; box-shadow: 2px 2px 0 var(--shadow);
+  }
 </style>
 </head>
 <body>
 
-<header class="glass">
+<header>
   <h1 id="title">Overview</h1>
-  <div>
-    <button class="icon-btn" id="syncBtn" aria-label="Refresh">↻</button>
-    <button class="icon-btn" id="setupBtn" aria-label="Setup">⚙</button>
+  <div class="hbtns">
+    <button class="round" id="themeBtn" aria-label="Switch theme">◐</button>
+    <button class="round" id="syncBtn" aria-label="Refresh">↻</button>
+    <button class="round" id="setupBtn" aria-label="Setup">⚙</button>
   </div>
 </header>
 
 <main>
-  <!-- ACTIVITY (left tab) -->
+  <!-- ACTIVITY -->
   <section class="view" id="view-activity">
-    <div class="section-title"><span>This month</span><span id="txCount"></span></div>
-    <div class="card glass" id="txList"></div>
-    <button class="btn ghost" id="importBtn">Import bank CSV</button>
+    <div class="section-title"><span>This month</span><span class="tot" id="txCount"></span></div>
+    <div class="card flat" id="txList"></div>
+    <button class="btn alt" id="importBtn">Import bank CSV</button>
   </section>
 
   <!-- ACCOUNTS -->
   <section class="view" id="view-accounts">
-    <div class="card glass">
+    <div class="card">
       <div class="label">Total across all accounts</div>
       <div class="big" id="accTotal">₹0</div>
     </div>
     <div class="section-title"><span>Your accounts</span></div>
-    <div class="card glass" id="accountList"></div>
+    <div class="card flat" id="accountList"></div>
     <button class="btn" id="addAccountBtn">+ Add bank, cash or card</button>
   </section>
 
-  <!-- OVERVIEW (center tab) -->
+  <!-- OVERVIEW -->
   <section class="view active" id="view-overview">
-    <div class="card glass">
+    <div class="card">
       <div class="label">Total balance</div>
       <div class="big" id="totalBalance">₹0</div>
       <div class="hint" id="balanceHint"></div>
     </div>
 
-    <div class="card glass">
+    <div class="card">
       <div class="label" id="monthLabel"></div>
-      <div class="big" id="monthSpent" style="font-size:26px">₹0</div>
+      <div class="big" id="monthSpent" style="font-size:28px">₹0</div>
       <div class="hint" id="monthHint"></div>
     </div>
 
     <div class="section-title"><span>Spending by category</span></div>
-    <div class="card glass" id="catBreakdown"></div>
+    <div class="card flat" id="catBreakdown"></div>
 
-    <div class="section-title"><span>Owed to you</span><span id="owedToMeTotal"></span></div>
-    <div class="card glass" id="owedToMeOverview"></div>
+    <div class="section-title"><span>Owed to you</span><span class="tot" id="owedToMeTotal"></span></div>
+    <div class="card flat" id="owedToMeOverview"></div>
 
-    <div class="section-title"><span>You owe</span><span id="iOweTotal"></span></div>
-    <div class="card glass" id="iOweOverview"></div>
+    <div class="section-title"><span>You owe</span><span class="tot" id="iOweTotal"></span></div>
+    <div class="card flat" id="iOweOverview"></div>
   </section>
 
   <!-- LENDING -->
   <section class="view" id="view-lending">
-    <div class="section-title"><span>Owed to you</span><span id="owedToMeTotal2"></span></div>
-    <div class="card glass" id="owedToMeList"></div>
+    <div class="section-title"><span>Owed to you</span><span class="tot" id="owedToMeTotal2"></span></div>
+    <div class="card flat" id="owedToMeList"></div>
 
-    <div class="section-title"><span>You owe</span><span id="iOweTotal2"></span></div>
-    <div class="card glass" id="iOweList"></div>
+    <div class="section-title"><span>You owe</span><span class="tot" id="iOweTotal2"></span></div>
+    <div class="card flat" id="iOweList"></div>
 
     <button class="btn" id="addLendBtn">+ Add lent or borrowed entry</button>
   </section>
 
   <!-- BUDGETS -->
   <section class="view" id="view-budgets">
-    <div class="card glass">
+    <div class="card">
       <div class="label" id="budgetMonth"></div>
       <div class="big" id="budgetRemaining">₹0</div>
       <div class="hint" id="budgetSummaryHint"></div>
@@ -238,26 +289,25 @@
     </div>
 
     <div class="section-title"><span>Categories</span></div>
-    <div class="card glass" id="budgetList"></div>
-    <button class="btn ghost" id="manageCatsBtn">Manage categories</button>
+    <div class="card flat" id="budgetList"></div>
+    <button class="btn alt" id="manageCatsBtn">Manage categories</button>
   </section>
 
-  <!-- SETUP (opened from gear icon) -->
+  <!-- SETUP -->
   <section class="view" id="view-setup">
     <div class="section-title"><span>Connection</span></div>
-    <div class="card glass">
+    <div class="card">
       <label>Apps Script Web App URL</label>
       <input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
-      <div class="hint">Paste the URL you got when deploying the script (see setup steps). Ends with /exec.</div>
+      <div class="hint">Paste the URL from your script deployment. It ends with /exec.</div>
       <button class="btn" id="saveUrlBtn">Save and connect</button>
     </div>
   </section>
 </main>
 
-<!-- Floating quick-add -->
 <button class="fab" id="fab" aria-label="Quick add transaction">+</button>
 
-<nav class="tabbar glass">
+<nav class="tabbar">
   <button class="tab" data-view="activity"><span class="ico">≡</span>Activity</button>
   <button class="tab" data-view="accounts"><span class="ico">▤</span>Accounts</button>
   <button class="tab active" data-view="overview"><span class="ico">◎</span>Overview</button>
@@ -279,6 +329,7 @@
 const state = { accounts: [], transactions: [], lending: [], categories: [], budgets: [] };
 const SYMBOL = '₹';
 const LS_KEY = 'budget_script_url';
+const THEME_KEY = 'budget_theme';
 
 const $ = s => document.querySelector(s);
 const fmt = n => SYMBOL + Math.round(Number(n || 0)).toLocaleString('en-IN');
@@ -287,6 +338,16 @@ const thisMonth = () => todayISO().slice(0, 7);
 const monthKey = d => String(d).slice(0, 7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const labelType = t => ({ bank: 'Bank account', cash: 'Cash', credit: 'Credit card' }[t] || t);
+
+/* ---------- Theme ---------- */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  $('#themeBtn').textContent = t === 'dark' ? '☀' : '☾';
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
 
 function toast(msg) {
   const t = $('#toast');
@@ -364,9 +425,16 @@ function render() {
   renderBudgets();
 }
 
+function partitionRows(list, emptyText) {
+  if (!list.length) return `<div class="empty">${emptyText}</div>`;
+  return list.map(l => `<div class="row" data-len="${l.id}">
+      <div><div>${esc(l.person)}</div><div class="meta">Principal ${fmt(l.principal)} · Repaid ${fmt(l.repaid)}</div></div>
+      <div class="amt">${fmt(outstanding(l))}</div>
+    </div>`).join('');
+}
+
 function renderOverview() {
-  const total = sumBy(state.accounts, accountBalance);
-  $('#totalBalance').textContent = fmt(total);
+  $('#totalBalance').textContent = fmt(sumBy(state.accounts, accountBalance));
   $('#balanceHint').textContent = state.accounts.length + ' accounts';
 
   $('#monthLabel').textContent = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
@@ -392,37 +460,24 @@ function renderOverview() {
       }).join('')
     : '<div class="empty">No spending this month yet</div>';
 
-  const owed = sumBy(owedToMe(), outstanding);
-  const owe = sumBy(iOwe(), outstanding);
-  $('#owedToMeTotal').textContent = fmt(owed);
-  $('#iOweTotal').textContent = fmt(owe);
+  $('#owedToMeTotal').textContent = fmt(sumBy(owedToMe(), outstanding));
+  $('#iOweTotal').textContent = fmt(sumBy(iOwe(), outstanding));
   $('#owedToMeOverview').innerHTML = partitionRows(owedToMe(), 'Nobody owes you money right now');
-  $('#iOweOverview').innerHTML = partitionRows(iOwe(), 'You don\'t owe anyone right now');
-}
-
-function partitionRows(list, emptyText) {
-  if (!list.length) return `<div class="empty">${emptyText}</div>`;
-  return list.map(l => `<div class="row" data-len="${l.id}">
-      <div><div>${esc(l.person)}</div><div class="meta">Principal ${fmt(l.principal)} · Repaid ${fmt(l.repaid)}</div></div>
-      <div class="amt">${fmt(outstanding(l))}</div>
-    </div>`).join('');
+  $('#iOweOverview').innerHTML = partitionRows(iOwe(), "You don't owe anyone right now");
 }
 
 function renderAccounts() {
   $('#accTotal').textContent = fmt(sumBy(state.accounts, accountBalance));
   const el = $('#accountList');
   if (!state.accounts.length) {
-    el.innerHTML = '<div class="empty">No accounts yet. Add your bank, cash, or credit card with its opening balance.</div>';
+    el.innerHTML = '<div class="empty">No accounts yet. Add your bank, cash or credit card with its opening balance.</div>';
     return;
   }
-  el.innerHTML = state.accounts.map(a => {
-    const bal = accountBalance(a);
-    return `<div class="row" data-acc="${a.id}">
+  el.innerHTML = state.accounts.map(a => `<div class="row" data-acc="${a.id}">
       <div><div>${esc(a.name)}</div>
       <div class="meta">${labelType(a.type)} · Opening ${fmt(a.opening_balance)}</div></div>
-      <div class="amt ${bal < 0 ? '' : ''}">${fmt(bal)}</div>
-    </div>`;
-  }).join('');
+      <div class="amt">${fmt(accountBalance(a))}</div>
+    </div>`).join('');
   el.querySelectorAll('.row').forEach(r => r.onclick = () => editAccount(r.dataset.acc));
 }
 
@@ -444,11 +499,10 @@ function renderActivity() {
 }
 
 function renderLending() {
-  const owed = owedToMe(), owe = iOwe();
-  $('#owedToMeTotal2').textContent = fmt(sumBy(owed, outstanding));
-  $('#iOweTotal2').textContent = fmt(sumBy(owe, outstanding));
-  $('#owedToMeList').innerHTML = partitionRows(owed, 'Nobody owes you money right now');
-  $('#iOweList').innerHTML = partitionRows(owe, 'You don\'t owe anyone right now');
+  $('#owedToMeTotal2').textContent = fmt(sumBy(owedToMe(), outstanding));
+  $('#iOweTotal2').textContent = fmt(sumBy(iOwe(), outstanding));
+  $('#owedToMeList').innerHTML = partitionRows(owedToMe(), 'Nobody owes you money right now');
+  $('#iOweList').innerHTML = partitionRows(iOwe(), "You don't owe anyone right now");
   document.querySelectorAll('#owedToMeList .row, #iOweList .row').forEach(r => r.onclick = () => editLending(r.dataset.len));
 }
 
@@ -482,19 +536,19 @@ function renderBudgets() {
     if (!limit) {
       return `<div class="row" data-cat="${esc(c.name)}">
         <div><div>${esc(c.name)}</div><div class="meta">No limit · spent ${fmt(spent)}</div></div>
-        <div class="tag">Set limit</div></div>`;
+        <span class="tag plain">Set limit</span></div>`;
     }
     const pct = Math.min(100, (spent / limit) * 100);
     const left = limit - spent;
     const expectedSoFar = limit * (dayNow / daysInMonth);
     let status;
-    if (left < 0) status = `<span class="tag on">Over by ${fmt(-left)}</span>`;
-    else if (spent > expectedSoFar) status = `<span class="tag">Ahead of pace</span>`;
+    if (left < 0) status = `<span class="tag warn">Over by ${fmt(-left)}</span>`;
+    else if (spent > expectedSoFar) status = `<span class="tag warn">Ahead of pace</span>`;
     else status = `<span class="tag">On track</span>`;
     return `<div class="row" data-cat="${esc(c.name)}" style="display:block">
       <div class="list-inline"><span>${esc(c.name)} ${status}</span><span class="amt">${fmt(spent)} / ${fmt(limit)}</span></div>
       <div class="bar"><span class="${left < 0 ? 'over' : ''}" style="width:${pct}%"></span></div>
-      <div class="meta" style="margin-top:6px">${left < 0 ? 'Overspent' : fmt(left) + ' left'} · ${Math.round(pct)}% used · ~${fmt(Math.max(0, left) / daysLeft)} per day</div>
+      <div class="meta" style="margin-top:8px">${left < 0 ? 'Overspent' : fmt(left) + ' left'} · ${Math.round(pct)}% used · ~${fmt(Math.max(0, left) / daysLeft)} per day</div>
     </div>`;
   }).join('');
   el.querySelectorAll('.row').forEach(r => r.onclick = () => editBudget(r.dataset.cat));
@@ -525,7 +579,7 @@ function accountForm(a = {}) {
     <input id="f_open" type="number" inputmode="decimal" value="${esc(a.opening_balance ?? 0)}">
     <div class="hint">The balance in this account on the day you start tracking it. Your transactions are added on top of this.</div>
     <button class="btn" id="saveAcc">${isEdit ? 'Save changes' : 'Add account'}</button>
-    ${isEdit ? '<button class="btn danger ghost" id="delAcc">Delete account</button>' : ''}`;
+    ${isEdit ? '<button class="btn danger" id="delAcc">Delete account</button>' : ''}`;
 }
 
 function bindAccount(id) {
@@ -543,7 +597,6 @@ function bindAccount(id) {
     closeSheet(); toast('Deleted');
   };
 }
-
 function addAccount() { openSheet('New account', accountForm()); bindAccount(null); }
 function editAccount(id) {
   const a = state.accounts.find(x => String(x.id) === String(id));
@@ -567,7 +620,7 @@ function txForm(t = {}) {
     <label>Category</label><select id="f_cat">${opts(cats, 'v', 'l', t.category || 'Other')}</select>
     <label>Note</label><input id="f_note" placeholder="Optional" value="${esc(t.note || '')}">
     <button class="btn" id="saveTx">${isEdit ? 'Save changes' : 'Add transaction'}</button>
-    ${isEdit ? '<button class="btn danger ghost" id="delTx">Delete</button>' : ''}`;
+    ${isEdit ? '<button class="btn danger" id="delTx">Delete</button>' : ''}`;
 }
 
 function bindTxForm(id) {
@@ -668,7 +721,7 @@ function lendForm(l = {}) {
     <label>Date</label><input id="f_date" type="date" value="${esc(String(l.date || todayISO()).slice(0, 10))}">
     <label>Note</label><input id="f_note" value="${esc(l.note || '')}">
     <button class="btn" id="saveLend">${isEdit ? 'Save changes' : 'Add entry'}</button>
-    ${isEdit ? '<button class="btn danger ghost" id="delLend">Delete</button>' : ''}`;
+    ${isEdit ? '<button class="btn danger" id="delLend">Delete</button>' : ''}`;
 }
 
 function bindLend(id) {
@@ -710,7 +763,7 @@ function editBudget(cat) {
 
 function manageCategories() {
   const list = state.categories.map(c => `<div class="row" style="cursor:default"><span>${esc(c.name)}</span>
-    <button class="icon-btn" data-del="${c.id}" aria-label="Remove">✕</button></div>`).join('');
+    <button class="round" data-del="${c.id}" aria-label="Remove">✕</button></div>`).join('');
   openSheet('Categories', `${list}
     <label>New category</label><input id="f_newcat" placeholder="e.g. Travel">
     <button class="btn" id="addCat">Add category</button>`);
@@ -737,7 +790,7 @@ function showView(name) {
 }
 document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => showView(tab.dataset.view));
 $('#setupBtn').onclick = () => showView('setup');
-
+$('#themeBtn').onclick = toggleTheme;
 $('#syncBtn').onclick = () => load();
 $('#fab').onclick = addTransaction;
 $('#addAccountBtn').onclick = addAccount;
@@ -751,6 +804,7 @@ $('#saveUrlBtn').onclick = () => {
   toast('Connected'); load(); showView('overview');
 };
 
+applyTheme(localStorage.getItem(THEME_KEY) || 'light');
 $('#scriptUrl').value = url();
 if (url()) load();
 else { showView('setup'); toast('Connect your script first'); }
